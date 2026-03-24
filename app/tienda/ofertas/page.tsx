@@ -1,61 +1,121 @@
+"use client";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 
-export default function Page() {
+export default function OfertasPage() {
+  const [ofertas, setOfertas] = useState([]);
+  const [email, setEmail] = useState("");
+
+  // 1. Cargar las ofertas desde la API
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/juegos")
+      .then((res) => res.json())
+      .then((data) => {
+        const soloOfertas = data.filter((j: any) => j.categoria === "Oferta");
+        setOfertas(soloOfertas);
+      });
+  }, []);
+
+  // 2. Añadir productos físicos al inventario
+  const agregarAlInventario = async (id: number, nombre: string) => {
+    const res = await fetch(
+      `http://127.0.0.1:8000/inventario?juego_id=${id}&nombre=${nombre}`,
+      {
+        method: "POST",
+      },
+    );
+
+    if (res.ok) {
+      alert(
+        `¡Éxito! El ${nombre} ha sido añadido a tu inventario de Inka Shop.`,
+      );
+    }
+  };
+
+  // 3. Función para la suscripción (la de 19€)
+  const manejarSuscripcion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch(
+      `http://127.0.0.1:8000/suscribirse?email=${email}`,
+      {
+        method: "POST",
+      },
+    );
+    if (res.ok) {
+      alert("¡Suscrito con éxito! Pronto recibirás tu código de descuento.");
+      setEmail("");
+    }
+  };
+
   return (
-    <main className="p-8 bg-slate-950 min-h-screen">
-      <div className="mx-auto w-full max-w-6xl">
-        <div className="bg-red-600 text-white p-4 rounded-lg mb-8 inline-block animate-bounce font-bold">
-          ¡OFERTAS FLASH DE FIN DE SEMANA!
-        </div>
-        <h2 className="text-4xl font-bold text-white mb-10">
-          Zonas de Descuento
-        </h2>
+    <main className="p-12 bg-black min-h-screen text-white">
+      <h2 className="text-5xl font-black mb-12 text-yellow-500 text-center tracking-tighter">
+        ZONA DE OFERTAS
+      </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-slate-900 p-6 rounded-3xl border-2 border-red-500/50 flex flex-col justify-between min-h-[520px]">
-            <div className="relative h-48 mb-5 rounded-2xl overflow-hidden border border-red-400/30 bg-black/20">
-              <Image
-                src="/tienda/ofertas/nintendo-switch-2-box.png"
-                alt="Pack Nintendo Switch 2"
-                fill
-                className="object-contain p-2"
-              />
-            </div>
-            <h3 className="text-3xl font-black text-white">Pack Nintendo</h3>
-            <p className="text-slate-400 mt-2">Switch 2 + Mario Kart World</p>
-            <div className="mt-4 flex items-center gap-4">
-              <span className="text-4xl font-bold text-red-500">490€</span>
-              <span className="text-xl text-slate-500 line-through">590€</span>
-            </div>
-            <button className="mt-6 w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-bold transition-colors">
-              ¡Lo quiero ya!
-            </button>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-6xl mx-auto">
+        {ofertas.map((oferta: any) => (
+          <div
+            key={oferta.id}
+            className="bg-slate-900 p-8 rounded-3xl border-2 border-yellow-500/30 flex flex-col justify-between shadow-2xl shadow-yellow-500/5"
+          >
+            <div>
+              <div className="relative h-64 mb-6 rounded-2xl overflow-hidden bg-black/40 border border-white/5">
+                <Image
+                  src={oferta.imagen_url}
+                  alt={oferta.nombre}
+                  fill
+                  className="object-contain p-4"
+                />
+              </div>
 
-          <div className="bg-slate-900 p-6 rounded-3xl border-2 border-yellow-500/50 flex flex-col justify-between min-h-[520px]">
-            <div className="relative h-48 mb-5 rounded-2xl overflow-hidden border border-yellow-400/30 bg-black/20">
-              <Image
-                src="/tienda/ofertas/gaming-products-50-v2.png"
-                alt="Gaming products 50% off"
-                fill
-                className="object-cover"
-              />
+              <h3 className="text-4xl font-black uppercase italic">
+                {oferta.nombre}
+              </h3>
+
+              <div className="mt-4 flex items-center gap-6">
+                <span className="text-5xl font-bold text-yellow-500">
+                  {oferta.precio}€
+                </span>
+                {oferta.precio_anterior && (
+                  <span className="text-2xl text-slate-500 line-through">
+                    {oferta.precio_anterior}€
+                  </span>
+                )}
+              </div>
             </div>
-            <h3 className="text-3xl font-black text-white">
-              Super Oferta Gamer
-            </h3>
-            <p className="text-slate-400 mt-2">50% OFF + envíos gratis</p>
-            <div className="mt-4 flex items-center gap-4">
-              <span className="text-4xl font-bold text-yellow-500">
-                19€/mes
-              </span>
-              <span className="text-xl text-slate-500 line-through">40€</span>
+
+            <div className="mt-8">
+              {oferta.nombre === "Super Oferta Gamer" ? (
+                /* SUSCRIPCIÓN POR EMAIL */
+                <form onSubmit={manejarSuscripcion} className="space-y-4">
+                  <input
+                    type="email"
+                    placeholder="Tu email para la oferta..."
+                    required
+                    className="w-full p-4 rounded-xl bg-black border border-slate-700 text-white focus:border-yellow-500 outline-none transition-colors"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <button
+                    type="submit"
+                    className="w-full bg-yellow-600 hover:bg-yellow-500 py-4 rounded-xl font-black transition-all transform active:scale-95 shadow-lg shadow-yellow-900/20"
+                  >
+                    ¡SUSCRIBIRME AHORA!
+                  </button>
+                </form>
+              ) : (
+                /* BOTÓN DE COMPRA*/
+                <button
+                  onClick={() => agregarAlInventario(oferta.id, oferta.nombre)}
+                  className="w-full bg-white text-black hover:bg-slate-200 py-4 rounded-xl font-black transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-white/10"
+                >
+                  AÑADIR AL INVENTARIO
+                </button>
+              )}
             </div>
-            <button className="mt-6 w-full bg-yellow-600 hover:bg-yellow-500 text-white py-3 rounded-xl font-bold transition-colors">
-              Suscribirse
-            </button>
           </div>
-        </div>
+        ))}
       </div>
     </main>
   );
